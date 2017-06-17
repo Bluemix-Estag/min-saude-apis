@@ -1,0 +1,19 @@
+
+{
+  "services": {
+    "cloudantNoSQLDB": [
+      {
+        "name": "min-saude-cloudantNoSQLDB",
+        "label": "cloudantNoSQLDB",
+        "plan": "Lite",
+      "credentials": {
+  "username": "a614a1f4-08ad-4372-ae44-cfd7d4dac793-bluemix",
+  "password": "06e03ecfeca899770395965f3f80e52d5afc973d56aabbe564980b65bbfa6340",
+  "host": "a614a1f4-08ad-4372-ae44-cfd7d4dac793-bluemix.cloudant.com",
+  "port": 443,
+  "url": "https://a614a1f4-08ad-4372-ae44-cfd7d4dac793-bluemix:06e03ecfeca899770395965f3f80e52d5afc973d56aabbe564980b65bbfa6340@a614a1f4-08ad-4372-ae44-cfd7d4dac793-bluemix.cloudant.com"
+	  }
+      }
+    ]
+  }
+}

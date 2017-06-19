@@ -169,6 +169,125 @@ app.post('/login', function(req,res){
   })
 });
 
+app.post('/addWaiting', function(req, res){
+  var patient = req.body;
+  database.get('waiting', {
+    revs_info: true
+  }, function (err, doc){
+    if(err){
+      res.status(400).json({
+        err,
+        status: false,
+        message: "Nao foi possivel encontrar o documento"
+      })
+    } else {
+      var patients = doc.patients;
+      patients.push(patient);
+      var rev = doc._rev;
+      var newdoc = {
+        patients,
+        _rev: rev
+      }
+      database.insert(newdoc, 'waiting', function(err,doc){
+        if(err){
+          res.status(400).json({
+            err,
+            status: false,
+            message: "Nao foi possivel adicionar a lista de espera"
+          })
+        }else{
+          res.status(200).json({
+            status: true,
+            message: "Adicionado a lista de espera"
+          });
+        }
+      })
+    }
+  });
+});
+
+app.get('/getWaiting', function(req, res){
+  database.get('waiting', {
+    revs_info: true
+  }, function(err,doc){
+    if(err){
+      res.status(400).json({
+        err,
+        status: false,
+        message: "Nao foi possivel pegar a lista de espera"
+      });
+    } else {
+      var patients = doc.patients;
+      var unchecked = [];
+      for(var patient of patients){
+        if(patient.checked_in == false){
+          unchecked.push(patient);
+        }
+      }
+      if(unchecked.length == 0){
+        res.status(404).json({
+          status: false,
+          message: "Lista de espera vazia"
+        });
+      } else {
+        res.status(200).json({
+          status: true,
+          unchecked
+        });
+      }
+    }
+  })
+});
+
+app.get('/checkIn', function(req, res){
+  var susNumber = req.query.susNumber;
+  database.get('waiting', {
+    revs_info: true
+  }, function (err,doc){
+    if(err){
+      res.status(400).json({
+        err,
+        status: false,
+        message: "Nao foi possivel pegar a lista de espera"
+      })
+    } else {
+      var patients = doc.patients;
+      var found = false;
+      for(var i in patients){
+        if(patients[i].sus_number === susNumber){
+          patients[i].checked_in = true;
+          found = true;
+          break;
+        }
+      }
+      if(!found){
+        res.status(404).json({
+          status: false,
+          message: "Nao foi possivel encontrar esse paciente"
+        })
+      } else {
+        database.insert({
+          patients,
+          _rev: doc._rev
+        }, 'waiting', function(err, doc){
+          if(err){
+            res.status(400).json({
+              err,
+              status: false,
+              message: "Nao foi possivel mudar o status do paciente"
+            });
+          } else {
+            res.status(200).json({
+              status: true,
+              message: "O status do paciente foi modificado"
+            });
+          }
+        })
+      }
+    }
+  })
+})
+
 http.createServer(app).listen(app.get('port'), '0.0.0.0', function () {
     console.log('Express server listening on port ' + app.get('port'));
 });

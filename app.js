@@ -4,7 +4,8 @@ var cfenv = require('cfenv');
 var cloudant = require('cloudant');
 var fs = require('fs');
 var http = require('http');
-var bodyParser = require('body-parser')
+var bodyParser = require('body-parser');
+var moment = require('moment');
 // create a new express server
 var app = express();
 
@@ -149,15 +150,15 @@ app.post('/login', function(req,res){
         error: true,
         statusCode: 400,
         message: "Nao foi possivel encontrar o documento"
-      })
+      });
     } else {
       var users = doc.users;
       var type;
-      var foundUser = false;
+      var found = false;
 
       for(var user of users){
         if(user.login === username && user.senha === password){
-          foundUser = true;
+          found = true;
           res.status(200).json({
             message: "Authorized",
             error: false,
@@ -165,7 +166,7 @@ app.post('/login', function(req,res){
           });
         }
       }
-      if(!foundUser){
+      if(!found){
         res.status(512).json({
           message: "Not Authorized",
           error: true,
@@ -173,12 +174,22 @@ app.post('/login', function(req,res){
         });
       }
     }
-  })
+  });
 });
 
 app.post('/addWaiting', function(req, res){
   res.setHeader('Content-Type','application/json');
   var patient = req.body;
+  if((patient.name == null || patient.name == "") || (patient.sus_number == null || patient.sus_number == "")){
+    res.status(400).json({
+      error: true,
+      statusCode: 400,
+      message: "Bad Request"
+    });
+  } else {
+  if(patient.checked_in == null){
+    patient.checked_in = false;
+  }
   database.get('waiting', {
     revs_info: true
   }, function (err, doc){
@@ -188,32 +199,50 @@ app.post('/addWaiting', function(req, res){
         error: true,
         statusCode: 400,
         message: "Nao foi possivel encontrar o documento"
-      })
+      });
     } else {
       var patients = doc.patients;
-      patients.push(patient);
-      var rev = doc._rev;
-      var newdoc = {
-        patients,
-        _rev: rev
-      }
-      database.insert(newdoc, 'waiting', function(err,doc){
-        if(err){
-          res.status(400).json({
-            err,
-            error: true,
-            statusCode: 400,
-            message: "Nao foi possivel adicionar a lista de espera"
-          })
-        }else{
-          res.status(200).json({
-            error: false,
-            message: "Adicionado a lista de espera"
-          });
+      var found = false;
+      for(var i of patients){
+        if(i.sus_number === patient.sus_number){
+          found = true;
+          break;
         }
-      })
+      }
+      if(!found){
+        patient.arrival = moment().unix();
+        patients.push(patient);
+        doc.patients = patients;
+        // var rev = doc._rev;
+        // var newdoc = {
+        //   patients,
+        //   _rev: rev
+        // }
+        database.insert(doc, 'waiting', function(err,doc){
+          if(err){
+            res.status(400).json({
+              err,
+              error: true,
+              statusCode: 400,
+              message: "Nao foi possivel adicionar a lista de espera"
+            });
+          } else {
+            res.status(200).json({
+              error: false,
+              message: "Adicionado a lista de espera"
+            });
+          }
+        });
+      } else {
+        res.status(400).json({
+          error: true,
+          statusCode: 400,
+          message: "Paciente ja esta na lista de espera"
+        });
+      }
     }
   });
+}
 });
 
 app.get('/getWaiting', function(req, res){
@@ -249,7 +278,7 @@ app.get('/getWaiting', function(req, res){
         });
       }
     }
-  })
+  });
 });
 
 app.get('/checkIn', function(req, res){
@@ -264,7 +293,7 @@ app.get('/checkIn', function(req, res){
         error: true,
         statusCode: 400,
         message: "Nao foi possivel pegar a lista de espera"
-      })
+      });
     } else {
       var patients = doc.patients;
       var found = false;
@@ -280,7 +309,7 @@ app.get('/checkIn', function(req, res){
           error: true,
           statusCode: 404,
           message: "Nao foi possivel encontrar esse paciente"
-        })
+        });
       } else {
         database.insert({
           patients,
@@ -299,11 +328,11 @@ app.get('/checkIn', function(req, res){
               message: "O status do paciente foi modificado"
             });
           }
-        })
+        });
       }
     }
-  })
-})
+  });
+});
 
 http.createServer(app).listen(app.get('port'), '0.0.0.0', function () {
     console.log('Express server listening on port ' + app.get('port'));

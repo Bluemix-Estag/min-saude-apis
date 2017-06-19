@@ -136,15 +136,21 @@ function initCloudant() {
 }
 
 app.post('/login', function(req,res){
+  res.setHeader('Content-Type','application/json');
   var username = req.body.username;
   var password = req.body.password;
 
   database.get('users', {
     revs_info:true
-  },function(err,doc){
+  }, function (err,doc){
     if(err){
-      console.log(err);
-    }else{
+      res.status(400).json({
+        err,
+        error: true,
+        statusCode: 400,
+        message: "Nao foi possivel encontrar o documento"
+      })
+    } else {
       var users = doc.users;
       var type;
       var foundUser = false;
@@ -154,7 +160,7 @@ app.post('/login', function(req,res){
           foundUser = true;
           res.status(200).json({
             message: "Authorized",
-            status: true,
+            error: false,
             page: user.type
           });
         }
@@ -162,7 +168,8 @@ app.post('/login', function(req,res){
       if(!foundUser){
         res.status(512).json({
           message: "Not Authorized",
-          status: false
+          error: true,
+          statusCode: 512
         });
       }
     }
@@ -170,6 +177,7 @@ app.post('/login', function(req,res){
 });
 
 app.post('/addWaiting', function(req, res){
+  res.setHeader('Content-Type','application/json');
   var patient = req.body;
   database.get('waiting', {
     revs_info: true
@@ -177,7 +185,8 @@ app.post('/addWaiting', function(req, res){
     if(err){
       res.status(400).json({
         err,
-        status: false,
+        error: true,
+        statusCode: 400,
         message: "Nao foi possivel encontrar o documento"
       })
     } else {
@@ -192,12 +201,13 @@ app.post('/addWaiting', function(req, res){
         if(err){
           res.status(400).json({
             err,
-            status: false,
+            error: true,
+            statusCode: 400,
             message: "Nao foi possivel adicionar a lista de espera"
           })
         }else{
           res.status(200).json({
-            status: true,
+            error: false,
             message: "Adicionado a lista de espera"
           });
         }
@@ -207,13 +217,15 @@ app.post('/addWaiting', function(req, res){
 });
 
 app.get('/getWaiting', function(req, res){
+  res.setHeader('Content-Type','application/json');
   database.get('waiting', {
     revs_info: true
   }, function(err,doc){
     if(err){
       res.status(400).json({
         err,
-        status: false,
+        error: true,
+        statusCode: 400,
         message: "Nao foi possivel pegar a lista de espera"
       });
     } else {
@@ -226,12 +238,13 @@ app.get('/getWaiting', function(req, res){
       }
       if(unchecked.length == 0){
         res.status(404).json({
-          status: false,
+          error:true,
+          statusCode: 404,
           message: "Lista de espera vazia"
         });
       } else {
         res.status(200).json({
-          status: true,
+          error: false,
           unchecked
         });
       }
@@ -240,6 +253,7 @@ app.get('/getWaiting', function(req, res){
 });
 
 app.get('/checkIn', function(req, res){
+  res.setHeader('Content-Type','application/json');
   var susNumber = req.query.susNumber;
   database.get('waiting', {
     revs_info: true
@@ -247,7 +261,8 @@ app.get('/checkIn', function(req, res){
     if(err){
       res.status(400).json({
         err,
-        status: false,
+        error: true,
+        statusCode: 400,
         message: "Nao foi possivel pegar a lista de espera"
       })
     } else {
@@ -262,7 +277,8 @@ app.get('/checkIn', function(req, res){
       }
       if(!found){
         res.status(404).json({
-          status: false,
+          error: true,
+          statusCode: 404,
           message: "Nao foi possivel encontrar esse paciente"
         })
       } else {
@@ -273,12 +289,13 @@ app.get('/checkIn', function(req, res){
           if(err){
             res.status(400).json({
               err,
-              status: false,
+              error: true,
+              statusCode: 400,
               message: "Nao foi possivel mudar o status do paciente"
             });
           } else {
             res.status(200).json({
-              status: true,
+              error: false,
               message: "O status do paciente foi modificado"
             });
           }

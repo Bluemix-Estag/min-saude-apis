@@ -213,11 +213,6 @@ app.post('/addWaiting', function(req, res){
         patient.arrival = moment().unix();
         patients.push(patient);
         doc.patients = patients;
-        // var rev = doc._rev;
-        // var newdoc = {
-        //   patients,
-        //   _rev: rev
-        // }
         database.insert(doc, 'waiting', function(err,doc){
           if(err){
             res.status(400).json({

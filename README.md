@@ -1,13 +1,21 @@
-# Node.js Hello World Sample
+# Ministerio da Saude - Login e Lista de Espera
+* /login **(POST)**
+_req_:
+```json
+{
+  "username": "Abcde",
+  "password": "1234"
+}
+```
+* /addWaiting **(POST)**
+_req_:
+```json
+{
+  "name": "Abcde",
+  "sus_number": "123456",
+}
+```
+* /getWaiting **(GET)**
 
-This application demonstrates a simple, reusable Node.js web application based on the Express framework.
-
-## Run the app locally
-
-1. [Install Node.js][]
-1. cd into this project's root directory
-1. Run `npm install` to install the app's dependencies
-1. Run `npm start` to start the app
-1. Access the running app in a browser at <http://localhost:6001>
-
-[Install Node.js]: https://nodejs.org/en/download/
+* /checkIn **(GET)**
+_query_: `?susNumber=123456`

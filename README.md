@@ -18,4 +18,6 @@ _req_:
 * /getWaiting **(GET)**
 
 * /checkIn **(GET)**
-_query_: `?susNumber=123456`
+_query_: `?q=1`
+
+* /getDoctorList **(GET)**

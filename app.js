@@ -146,7 +146,6 @@ app.post('/login', function(req,res){
   }, function (err,doc){
     if(err){
       res.status(400).json({
-        err,
         error: true,
         statusCode: 400,
         message: "Nao foi possivel encontrar o documento"
@@ -187,15 +186,14 @@ app.post('/addWaiting', function(req, res){
       message: "Bad Request"
     });
   } else {
-  if(patient.checked_in == null){
-    patient.checked_in = false;
-  }
+  // if(patient.checked_in == null){
+  //   patient.checked_in = false;
+  // }
   database.get('waiting', {
     revs_info: true
   }, function (err, doc){
     if(err){
       res.status(400).json({
-        err,
         error: true,
         statusCode: 400,
         message: "Nao foi possivel encontrar o documento"
@@ -216,7 +214,6 @@ app.post('/addWaiting', function(req, res){
         database.insert(doc, 'waiting', function(err,doc){
           if(err){
             res.status(400).json({
-              err,
               error: true,
               statusCode: 400,
               message: "Nao foi possivel adicionar a lista de espera"
@@ -247,29 +244,29 @@ app.get('/getWaiting', function(req, res){
   }, function(err,doc){
     if(err){
       res.status(400).json({
-        err,
         error: true,
         statusCode: 400,
         message: "Nao foi possivel pegar a lista de espera"
       });
     } else {
-      var patients = doc.patients;
-      var unchecked = [];
-      for(var patient of patients){
-        if(patient.checked_in == false){
-          unchecked.push(patient);
-        }
-      }
-      if(unchecked.length == 0){
+      // var patients = doc.patients;
+      // var unchecked = [];
+      // for(var patient of patients){
+      //   if(patient.checked_in == false){
+      //     unchecked.push(patient);
+      //   }
+      // }
+      if(doc.patients.length == 0){
         res.status(404).json({
           error:true,
           statusCode: 404,
           message: "Lista de espera vazia"
         });
       } else {
+        var patients = doc.patients
         res.status(200).json({
           error: false,
-          unchecked
+          patients
         });
       }
     }
@@ -278,56 +275,165 @@ app.get('/getWaiting', function(req, res){
 
 app.get('/checkIn', function(req, res){
   res.setHeader('Content-Type','application/json');
-  var susNumber = req.query.susNumber;
+  var priority = req.query.q;
+  if(priority == null || priority == ""){
+    priority = "1";
+  }
   database.get('waiting', {
     revs_info: true
   }, function (err,doc){
     if(err){
       res.status(400).json({
-        err,
         error: true,
         statusCode: 400,
         message: "Nao foi possivel pegar a lista de espera"
       });
     } else {
-      var patients = doc.patients;
-      var found = false;
-      for(var i in patients){
-        if(patients[i].sus_number === susNumber){
-          patients[i].checked_in = true;
-          found = true;
-          break;
-        }
-      }
-      if(!found){
-        res.status(404).json({
-          error: true,
-          statusCode: 404,
-          message: "Nao foi possivel encontrar esse paciente"
-        });
-      } else {
-        database.insert({
-          patients,
-          _rev: doc._rev
-        }, 'waiting', function(err, doc){
+      if(doc.patients.length != 0){
+        var patients = doc.patients;
+        var patient = patients.shift();
+        patient.priority = priority;
+        patient.checked_in = moment().unix();
+        var originalrev = doc._rev;
+        database.get('doctorList', {
+          revs_info:true
+        }, function(err,doc){
           if(err){
             res.status(400).json({
-              err,
               error: true,
               statusCode: 400,
-              message: "Nao foi possivel mudar o status do paciente"
+              message: "Nao foi possivel pegar a lista do medico"
             });
           } else {
-            res.status(200).json({
-              error: false,
-              message: "O status do paciente foi modificado"
-            });
+            var found = false;
+            for(var i of doc.prioritario){
+              if(i.sus_number === patient.sus_number){
+                found = true;
+                break;
+              }
+            }
+            if(!found){
+              for(var i of doc.imediato){
+                if(i.sus_number === patient.sus_number){
+                  found = true;
+                  break;
+                }
+              }
+            }
+            if(!found){
+              for(var i of doc.dia){
+                if(i.sus_number === patient.sus_number){
+                  found = true;
+                  break;
+                }
+              }
+            }
+            if(!found){
+            switch(priority){
+              case '3':
+                doc.imediato.push(patient);
+                break;
+              case '2':
+                doc.prioritario.push(patient);
+                break;
+              case '1':
+                doc.dia.push(patient);
+                break;
           }
+          database.insert(doc, 'doctorList', function(err,doc){
+            if(err){
+              res.status(400).json({
+                error: true,
+                statusCode: 400,
+                message: "Nao foi possivel adicionar na lista do medico"
+              });
+            } else {
+              database.insert({
+                  patients,
+                  _rev: originalrev
+                }, 'waiting', function(err, doc){
+                  if(err){
+                      res.status(400).json({
+                        err,
+                        error: true,
+                        statusCode: 400,
+                        message: "Nao foi possivel retirar o paciente da lista"
+                      });
+                  } else {
+                      res.status(200).json({
+                        error: false,
+                        message: "O status do paciente foi modificado"
+                      });
+                    }
+                });
+            }
+          });
+        } else {
+          database.insert({
+              patients,
+              _rev: originalrev
+            }, 'waiting', function(err, doc){
+              if(err){
+                  res.status(400).json({
+                    err,
+                    error: true,
+                    statusCode: 400,
+                    message: "Nao foi possivel retirar o paciente da lista"
+                  });
+              } else {
+                  res.status(200).json({
+                    error: false,
+                    message: "Paciente ja esta na lista do medico"
+                  });
+                }
+            });
+        }
+        }
+      });
+
+    } else {
+        res.status(404).json({
+          error: true,
+          message: "Lista vazia"
+        })
+      }
+    }
+  });
+});
+
+app.get('/getDoctorList', function(req, res){
+  res.setHeader('Content-Type','application/json');
+  database.get('doctorList', {
+    revs_info: true
+  }, function(err,doc){
+    if(err){
+      res.status(400).json({
+        error: true,
+        statusCode: 400,
+        message: "Nao foi possivel pegar a lista de espera"
+      });
+    } else {
+      if(doc.prioritario.length == 0 && doc.imediato.length == 0 && doc.dia.length == 0){
+        res.status(404).json({
+          error:true,
+          statusCode: 404,
+          message: "Lista de espera vazia"
+        });
+      } else {
+        var prioritario = doc.prioritario;
+        var imediato = doc.imediato;
+        var dia = doc.dia;
+        res.status(200).json({
+          error: false,
+          prioritario,
+          imediato,
+          dia
         });
       }
     }
   });
 });
+
 
 http.createServer(app).listen(app.get('port'), '0.0.0.0', function () {
     console.log('Express server listening on port ' + app.get('port'));

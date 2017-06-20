@@ -3,8 +3,8 @@ applications:
   memory: 128M
   instances: 1
   domain: mybluemix.net
-  name: min-saude-login
-  host: min-saude-login
+  name: min-saude-apis
+  host: min-saude-apis
   disk_quota: 1024M
   services:
   - min-saude-cloudantNoSQLDB

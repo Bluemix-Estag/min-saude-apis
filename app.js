@@ -434,6 +434,57 @@ app.get('/getDoctorList', function(req, res){
   });
 });
 
+app.get('/removeDoctorList', function(req, res){
+  res.setHeader('Content-Type','application/json');
+  database.get('doctorList',{
+    revs_info: true
+  }, function(err, doc){
+    if(err){
+      res.status(400).json({
+        error: true,
+        statusCode: 400,
+        message: "Nao foi possivel pegar a lista do medico"
+      });
+    } else {
+      var ok = true;
+      if(doc.imediato.length != 0){
+        doc.imediato.shift();
+      } else {
+        if(doc.prioritario.length != 0){
+          doc.prioritario.shift();
+        } else {
+          if(doc.dia.length != 0){
+            doc.dia.shift();
+          } else {
+            ok = false;
+            res.status(400).json({
+              error: true,
+              statusCode: 400,
+              message: "Lista esta vazia"
+            });
+          }
+        }
+      }
+      if(ok){
+        database.insert(doc, 'doctorList', function(err, doc){
+          if(err){
+            res.status(400).json({
+              error: true,
+              statusCode: 400,
+              message: "Nao foi possivel retirar da lista do medico"
+            });
+          } else {
+            res.status(200).json({
+              error: false,
+              statusCode: 200,
+              message: "Paciente retirado"
+            });
+          }
+        });
+      }
+    }
+  });
+});
 
 http.createServer(app).listen(app.get('port'), '0.0.0.0', function () {
     console.log('Express server listening on port ' + app.get('port'));

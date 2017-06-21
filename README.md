@@ -17,7 +17,24 @@ _req_:
 ```
 * /getWaiting **(GET)**
 
-* /checkIn **(GET)**
-_query_: `?q=1`
+* /checkIn **(POST)**
+_query_:
+```json
+{
+  "priority": "2",
+  "info": {
+    "queixa": "abdsjl",
+    "temperatura": "76",
+    "etc ..."
+  }
+}
+```
 
 * /getDoctorList **(GET)**
+
+* /removeDoctorList **(GET)**
+
+### Priority
+* 3 = imediato
+* 2 = prioritario
+* 1 = no dia

@@ -273,9 +273,10 @@ app.get('/getWaiting', function(req, res){
   });
 });
 
-app.get('/checkIn', function(req, res){
+app.post('/checkIn', function(req, res){
   res.setHeader('Content-Type','application/json');
-  var priority = req.query.q;
+  var priority = req.body.priority;
+  var info =  req.body.info;
   if(priority == null || priority == ""){
     priority = "1";
   }
@@ -292,6 +293,7 @@ app.get('/checkIn', function(req, res){
       if(doc.patients.length != 0){
         var patients = doc.patients;
         var patient = patients.shift();
+        patient.info = info;
         patient.priority = priority;
         patient.checked_in = moment().unix();
         var originalrev = doc._rev;

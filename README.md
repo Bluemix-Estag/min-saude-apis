@@ -18,7 +18,7 @@ _req_:
 * /getWaiting **(GET)**
 
 * /checkIn **(POST)**
-_query_:
+_req_:
 ```json
 {
   "priority": "2",
@@ -33,6 +33,7 @@ _query_:
 * /getDoctorList **(GET)**
 
 * /removeDoctorList **(GET)**
+_query_: `?susNumber=12345`
 
 ### Priority
 * 3 = imediato

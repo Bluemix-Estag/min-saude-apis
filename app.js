@@ -438,6 +438,7 @@ app.get('/getDoctorList', function(req, res){
 
 app.get('/removeDoctorList', function(req, res){
   res.setHeader('Content-Type','application/json');
+  var susNumber = req.query.susNumber;
   database.get('doctorList',{
     revs_info: true
   }, function(err, doc){
@@ -448,41 +449,80 @@ app.get('/removeDoctorList', function(req, res){
         message: "Nao foi possivel pegar a lista do medico"
       });
     } else {
-      var ok = true;
-      if(doc.imediato.length != 0){
-        doc.imediato.shift();
+      var found = false;
+      if(doc.imediato.length == 0 && doc.prioritario.length == 0 && doc.dia.length == 0){
+        res.status(400).json({
+          error: true,
+          statusCode: 400,
+          message: "Lista esta vazia"
+        });
       } else {
-        if(doc.prioritario.length != 0){
-          doc.prioritario.shift();
-        } else {
-          if(doc.dia.length != 0){
-            doc.dia.shift();
-          } else {
-            ok = false;
-            res.status(400).json({
-              error: true,
-              statusCode: 400,
-              message: "Lista esta vazia"
-            });
+      // if(doc.imediato.length != 0){
+      //   doc.imediato.shift();
+      // } else {
+      //   if(doc.prioritario.length != 0){
+      //     doc.prioritario.shift();
+      //   } else {
+      //     if(doc.dia.length != 0){
+      //       doc.dia.shift();
+      //     } else {
+      //       ok = false;
+      //       res.status(400).json({
+      //         error: true,
+      //         statusCode: 400,
+      //         message: "Lista esta vazia"
+      //       });
+      //     }
+      //   }
+      // }
+        for(var i in doc.imediato){
+          if(doc.imediato[i].sus_number === susNumber){
+            doc.imediato.splice(i,1);
+            found = true;
+            break;
           }
         }
-      }
-      if(ok){
-        database.insert(doc, 'doctorList', function(err, doc){
-          if(err){
-            res.status(400).json({
-              error: true,
-              statusCode: 400,
-              message: "Nao foi possivel retirar da lista do medico"
-            });
-          } else {
-            res.status(200).json({
-              error: false,
-              statusCode: 200,
-              message: "Paciente retirado"
-            });
+        if(!found){
+          for(var i in doc.prioritario){
+            if(doc.prioritario[i].sus_number === susNumber){
+              doc.prioritario.splice(i,1);
+              found = true;
+              break;
+            }
           }
-        });
+        }
+        if(!found){
+          for(var i in doc.dia){
+            if(doc.dia[i].sus_number === susNumber){
+              doc.dia.splice(i,1);
+              found = true;
+              break;
+            }
+          }
+        }
+        if(found){
+          database.insert(doc, 'doctorList', function(err, doc){
+            if(err){
+              res.status(400).json({
+                error: true,
+                statusCode: 400,
+                message: "Nao foi possivel retirar da lista do medico"
+              });
+            } else {
+              res.status(200).json({
+                error: false,
+                statusCode: 200,
+                message: "Paciente retirado"
+              });
+            }
+          });
+        } else {
+          res.status(404).json({
+            error: true,
+            statusCode: 404,
+            message: "Paciente nao encontrado"
+          });
+        }
       }
     }
   });

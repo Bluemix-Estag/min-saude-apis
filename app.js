@@ -362,11 +362,51 @@ app.post('/checkIn', function(req, res){
                         message: "Nao foi possivel retirar o paciente da lista"
                       });
                   } else {
-                      res.status(200).json({
-                        error: false,
-                        message: "O status do paciente foi modificado"
-                      });
-                    }
+                    var susNumber = patient.susNumber
+                    database.get('patients',{
+                      revs_info: true
+                    }, function (err,doc){
+                      if(err){
+                        res.status(400).json({
+                          error: true,
+                          statusCode: 400,
+                          message: "Nao foi pegar o documento dos pacientes"
+                        })
+                      } else {
+                        var found = false;
+                        for(var i in doc.patients){
+                          if(doc.patients[i].sus_number === susNumber){
+                            found = true;
+                            doc.patients[i].historico.push(info);
+                            break;
+                          }
+                        }
+                        if(found){
+                          database.insert(doc, 'patients', function(err,doc){
+                            if(err){
+                              res.status(400).json({
+                                error: true,
+                                statusCode: 400,
+                                message: "Nao foi possivel inserir"
+                              })
+                            } else {
+                              res.status(200).json({
+                                error: false,
+                                statusCode: 200,
+                                message: "Paciente foi modificado"
+                              })
+                            }
+                          })
+                        } else {
+                          res.status(404).json({
+                            error: true,
+                            statusCode: 404,
+                            message: "Nao foi possivel encontrar o usuario"
+                          })
+                        }
+                      }
+                    })
+                  }
                 });
             }
           });
@@ -511,7 +551,6 @@ app.get('/removeDoctorList', function(req, res){
             } else {
               res.status(200).json({
                 error: false,
-                statusCode: 200,
                 message: "Paciente retirado"
               });
             }
@@ -527,6 +566,44 @@ app.get('/removeDoctorList', function(req, res){
     }
   });
 });
+
+app.get('/getPatient', function(req, res){
+  res.setHeader('Content-Type','application/json');
+  var susNumber = req.query.susNumber;
+  database.get('patients', {
+    revs_info: true
+  }, function(err, doc){
+    if(err){
+      res.status(400).json({
+        error: true,
+        statusCode: 400,
+        message: "Nao foi possivel pegar a lista de pacientes"
+      })
+    } else {
+       var found = false;
+       var patient = null;
+      for(var i in doc.patients){
+        if(doc.patients[i].sus === susNumber){
+          patient = doc.patients[i]
+          found = true;
+          break;
+        }
+      }
+      if(found){
+        res.status(200).json({
+          patient,
+          error: false,
+        })
+      } else {
+        res.status(404).json({
+          error: true,
+          statusCode: 404,
+          message: "Paciente nao foi encontrado"
+        })
+      }
+    }
+  })
+})
 
 http.createServer(app).listen(app.get('port'), '0.0.0.0', function () {
     console.log('Express server listening on port ' + app.get('port'));

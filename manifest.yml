@@ -3,8 +3,6 @@ applications:
   memory: 128M
   instances: 1
   domain: mybluemix.net
-  name: min-saude-apis
-  host: min-saude-apis
+  name: ministerio-saude-apis
+  host: ministerio-saude-apis
   disk_quota: 1024M
-  services:
-  - min-saude-cloudantNoSQLDB
